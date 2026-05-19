@@ -5,7 +5,7 @@ import { randomUUID } from "node:crypto";
 import { mkdir, readFile, unlink } from "node:fs/promises";
 import { existsSync, watch, type FSWatcher } from "node:fs";
 import net from "node:net";
-import { basename, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { z } from "zod";
 import { SSHSession } from "../ssh/ssh-session.js";
 import { deleteHost, findHost, getHosts, saveHost } from "../store/host-store.js";
@@ -1013,27 +1013,94 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
 
     await new Promise<void>((resolve, reject) => {
       const appSettings = getAppSettings();
-      void appSettings.then((cfg) => {
-        const editorCmd = cfg.editorCommand?.trim() || "code";
-        const editor = spawn(editorCmd, [localPath], {
-          stdio: "ignore",
-          detached: true
-        });
+      void appSettings.then(async (cfg) => {
+        const configuredEditor = cfg.editorCommand?.trim() || "code";
+        const fallbackEditors = [
+          configuredEditor,
+          "xdg-open",
+          "gedit",
+          "kate",
+          "nano",
+          "vi"
+        ];
 
-        editor.once("error", (error) => {
-          reject(new Error(`Failed to launch editor '${editorCmd}'. Ensure it is in PATH. (${error.message})`));
-        });
+        // Deduplicate while preserving order
+        const seen = new Set<string>();
+        const uniqueEditors: string[] = [];
+        for (const cmd of fallbackEditors) {
+          if (!seen.has(cmd)) {
+            seen.add(cmd);
+            uniqueEditors.push(cmd);
+          }
+        }
 
-        editor.once("spawn", () => {
-          editor.unref();
-          resolve();
-        });
+        let lastError: Error | null = null;
+        for (const editorCmd of uniqueEditors) {
+          try {
+            await new Promise<void>((res, rej) => {
+              const editor = spawn(editorCmd, [localPath], {
+                stdio: "ignore",
+                detached: true
+              });
+
+              editor.once("error", (error) => {
+                rej(error);
+              });
+
+              editor.once("spawn", () => {
+                editor.unref();
+                res();
+              });
+            });
+            // Successfully launched an editor
+            lastError = null;
+            break;
+          } catch (error) {
+            lastError = error instanceof Error ? error : new Error(String(error));
+            // Try next fallback
+          }
+        }
+
+        if (lastError) {
+          reject(new Error(
+            `Failed to launch editor. Tried: ${uniqueEditors.join(", ")}. ` +
+            `Configure a different editor in Settings > Editor, or ensure one of the tried editors is installed. ` +
+            `(${lastError.message})`
+          ));
+          return;
+        }
+
+        resolve();
       });
     });
 
     return {
       opened: true,
       localPath
+    };
+  });
+
+  ipcMain.handle("sftp:extractZip", async (_event, rawInput: unknown) => {
+    const parsed = sftpExtractZipSchema.safeParse(rawInput);
+    if (!parsed.success) {
+      throw new Error(`Invalid SFTP extract zip payload: ${parsed.error.message}`);
+    }
+
+    const session = sessions.get(parsed.data.sessionId);
+    if (!session) {
+      throw new Error("Session not found");
+    }
+
+    const remotePath = parsed.data.remotePath.trim();
+    const extractDir = dirname(remotePath);
+
+    // Run unzip remotely on the server
+    const command = `unzip -o "${remotePath}" -d "${extractDir}" 2>&1`;
+    await session.exec(command);
+
+    return {
+      extracted: true,
+      extractedPath: extractDir
     };
   });
 }

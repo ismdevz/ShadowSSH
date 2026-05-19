@@ -376,7 +376,7 @@ const defaultFormState: ConnectFormState = {
   password: "",
   privateKeyPath: "",
   passphrase: "",
-  sftpStartPath: ".",
+  sftpStartPath: "/",
   saveHost: true,
   useProxy: false,
   proxyHost: "",
@@ -679,8 +679,8 @@ export function App() {
     setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 4000);
   };
 
-  const [sftpPath, setSftpPath] = useState(".");
-  const [sftpPathInput, setSftpPathInput] = useState(".");
+  const [sftpPath, setSftpPath] = useState("/");
+  const [sftpPathInput, setSftpPathInput] = useState("/");
   const [sftpStatus, setSftpStatus] = useState("Connect a session to use SFTP");
   const [sftpEntries, setSftpEntries] = useState<SFTPEntry[]>([]);
   const [selectedRemotePath, setSelectedRemotePath] = useState<string | null>(null);
@@ -817,11 +817,11 @@ export function App() {
   const connectWithPayload = async (
     payload: ConnectSSHInput,
     view: SessionView = "terminal",
-    initialSftpPath = ".",
+    initialSftpPath = "/",
     profileName?: string
   ): Promise<void> => {
     const result = await window.api.connectSSH(payload);
-    sftpPathBySession.current.set(result.sessionId, initialSftpPath.trim() || ".");
+    sftpPathBySession.current.set(result.sessionId, initialSftpPath.trim() || "/");
     const name = profileName ?? payload.host;
     const next: SessionMeta = {
       sessionId: result.sessionId,
@@ -859,7 +859,7 @@ export function App() {
       payload.proxyAuthMethod = "password";
     }
 
-    await connectWithPayload(payload, view, host.sftpStartPath ?? ".", host.name);
+    await connectWithPayload(payload, view, host.sftpStartPath ?? "/", host.name);
   };
 
   const removeSession = async (sessionId: string, disconnectRemote = true): Promise<void> => {
@@ -1212,7 +1212,7 @@ export function App() {
       password: password ?? "",
       privateKeyPath: host.privateKeyPath ?? "",
       passphrase: "",
-      sftpStartPath: host.sftpStartPath ?? ".",
+      sftpStartPath: host.sftpStartPath ?? "/",
       saveHost: true,
       useProxy: Boolean(host.proxyHost),
       proxyHost: host.proxyHost ?? "",
@@ -1311,7 +1311,7 @@ export function App() {
         username: formState.username.trim(),
         authMethod: formState.authMethod,
         privateKeyPath: formState.privateKeyPath.trim() || undefined,
-        sftpStartPath: formState.sftpStartPath.trim() || ".",
+        sftpStartPath: formState.sftpStartPath.trim() || "/",
         password: formState.authMethod === "password" ? formState.password : undefined,
         proxyHost: formState.useProxy ? formState.proxyHost.trim() : undefined,
         proxyPort: formState.useProxy ? formState.proxyPort : undefined,
@@ -1361,7 +1361,7 @@ export function App() {
       await connectWithPayload(
         payload,
         "terminal",
-        formState.sftpStartPath.trim() || ".",
+        formState.sftpStartPath.trim() || "/",
         formState.name.trim() || formState.host.trim()
       );
       setModalOpen(false);
@@ -1752,7 +1752,7 @@ export function App() {
         username: u,
         authMethod: formState.authMethod,
         privateKeyPath: formState.privateKeyPath.trim() || undefined,
-        sftpStartPath: formState.sftpStartPath.trim() || ".",
+        sftpStartPath: formState.sftpStartPath.trim() || "/",
         password: formState.authMethod === "password" ? formState.password : undefined
       });
       await refreshHosts();
