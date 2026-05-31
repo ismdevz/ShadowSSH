@@ -2637,8 +2637,39 @@ AS_EOF"
       // starts fresh with the new DE instead of resuming the old cached session
       const killNxSessions = `
         echo "[ShadowSSH] Terminating all existing NoMachine sessions..."
-        # Stop any active display managers that block virtual display fallback on headless VPS
-        sudo systemctl stop display-manager 2>/dev/null || sudo systemctl stop lightdm 2>/dev/null || sudo systemctl stop gdm3 2>/dev/null || sudo systemctl stop gdm 2>/dev/null || sudo systemctl stop sddm 2>/dev/null || true
+        
+        # Ensure dummy Xorg driver configuration is in place so display-manager can run headlessly
+        if [ ! -f /etc/X11/xorg.conf.d/99-headless.conf ]; then
+          sudo mkdir -p /etc/X11/xorg.conf.d 2>/dev/null || true
+          sudo bash -c "cat > /etc/X11/xorg.conf.d/99-headless.conf << 'XORG_EOF'
+Section \"Device\"
+  Identifier  \"VirtualDevice\"
+  Driver      \"dummy\"
+  Option      \"SWCursor\"  \"true\"
+EndSection
+
+Section \"Monitor\"
+  Identifier  \"VirtualMonitor\"
+  Option      \"DPMS\" \"false\"
+EndSection
+
+Section \"Screen\"
+  Identifier  \"VirtualScreen\"
+  Device      \"VirtualDevice\"
+  Monitor     \"VirtualMonitor\"
+  DefaultDepth 24
+  SubSection  \"Display\"
+    Depth    24
+    Modes    \"1920x1080\" \"1280x720\" \"1024x768\"
+  EndSubSection
+EndSection
+XORG_EOF"
+        fi
+
+        # Make sure display-manager is started/running with dummy configuration
+        sudo systemctl start display-manager 2>/dev/null || sudo systemctl start lightdm 2>/dev/null || sudo systemctl start gdm3 2>/dev/null || sudo systemctl start gdm 2>/dev/null || sudo systemctl start sddm 2>/dev/null || true
+        # Also restart it to apply dummy configuration if it was already running in a broken state
+        sudo systemctl restart display-manager 2>/dev/null || sudo systemctl restart lightdm 2>/dev/null || sudo systemctl restart gdm3 2>/dev/null || sudo systemctl restart gdm 2>/dev/null || sudo systemctl restart sddm 2>/dev/null || true
 
         # Use nxserver terminate first (graceful)
         if [ -x /etc/NX/nxserver ]; then
