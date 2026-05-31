@@ -1686,6 +1686,18 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
                     `<option key="Auth" value="${scrambledPassword}" />\n</group>`
                   );
                 }
+
+                if (xml.includes('key="Remember password"')) {
+                  xml = xml.replace(
+                    /<option\s+key="Remember\s+password"\s+value="[^"]*"\s*\/>/gi,
+                    `<option key="Remember password" value="true" />`
+                  );
+                } else {
+                  xml = xml.replace(
+                    /<\/group>/i,
+                    `<option key="Remember password" value="true" />\n</group>`
+                  );
+                }
               }
             } catch {
               xml = "";
@@ -1695,7 +1707,7 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
           if (!xml) {
             let authOption = "";
             if (password) {
-              authOption = `<option key="Auth" value="${scrambledPassword}" />`;
+              authOption = `<option key="Auth" value="${scrambledPassword}" />\n<option key="Remember password" value="true" />`;
             }
             xml = `<!DOCTYPE NXClientSettings>
 <NXClientSettings version="1.5" >

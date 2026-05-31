@@ -2472,21 +2472,30 @@ export function App() {
       // Build dynamic xstartup content — prioritizing the currently active DE detected by SMD
       const activeDe = guiCheckState.deType || "xfce";
       const deOrder = [activeDe, ...["xfce", "mate", "cinnamon", "kde", "gnome"].filter(x => x !== activeDe)];
+      
+      const deCmds: Record<string, string[]> = {
+        kde: ["startplasma-x11", "startkde"],
+        cinnamon: ["cinnamon-session"],
+        xfce: ["startxfce4"],
+        mate: ["mate-session"],
+        gnome: ["gnome-session"]
+      };
+
       const checks: string[] = [];
       for (const de of deOrder) {
-        if (de === "kde") {
+        const cmds = deCmds[de] || [];
+        for (const cmd of cmds) {
           checks.push(
-            "command -v startplasma-x11 >/dev/null 2>&1; then\n  exec dbus-run-session -- startplasma-x11",
-            "command -v startkde >/dev/null 2>&1; then\n  exec dbus-run-session -- startkde"
+            `command -v ${cmd} >/dev/null 2>&1; then\n` +
+            `  export XDG_CURRENT_DESKTOP="${de.toUpperCase()}"\n` +
+            `  if command -v dbus-run-session >/dev/null 2>&1; then\n` +
+            `    exec dbus-run-session -- ${cmd}\n` +
+            `  elif command -v dbus-launch >/dev/null 2>&1; then\n` +
+            `    exec dbus-launch --exit-with-session ${cmd}\n` +
+            `  else\n` +
+            `    exec ${cmd}\n` +
+            `  fi`
           );
-        } else if (de === "cinnamon") {
-          checks.push("command -v cinnamon-session >/dev/null 2>&1; then\n  exec dbus-run-session -- cinnamon-session");
-        } else if (de === "xfce") {
-          checks.push("command -v startxfce4 >/dev/null 2>&1; then\n  exec dbus-run-session -- startxfce4");
-        } else if (de === "mate") {
-          checks.push("command -v mate-session >/dev/null 2>&1; then\n  exec dbus-run-session -- mate-session");
-        } else if (de === "gnome") {
-          checks.push("command -v gnome-session >/dev/null 2>&1; then\n  exec dbus-run-session -- gnome-session");
         }
       }
 
@@ -2547,7 +2556,7 @@ export function App() {
       console.log("[VNC] Scripts uploaded via SFTP");
 
       // Short exec: copy xstartup into place, make executable
-      const cpRes = await window.api.sshExec(activeSessionId, "cp /tmp/vnc_xstartup.sh ~/.vnc/xstartup && chmod +x ~/.vnc/xstartup && echo CP_OK");
+      const cpRes = await window.api.sshExec(activeSessionId, "mkdir -p ~/.vnc && cp /tmp/vnc_xstartup.sh ~/.vnc/xstartup && chmod +x ~/.vnc/xstartup && echo CP_OK");
       console.log("[VNC-CP]:", cpRes.output);
 
       // Run the setup script — short command, always works
