@@ -2555,6 +2555,9 @@ ${authOption}
       const deKillCmd = `
         set -x
         echo "Cleaning up other DE sessions..."
+        # FIX OWNERSHIP: Ensure configuration/session files are owned by $(whoami) instead of root
+        sudo chown -R $(whoami):$(id -gn) ~/.vnc ~/.dbus ~/.config ~/.cache ~/.local ~/.Xauthority ~/.xsession ~/.xinitrc ~/.Xclients 2>/dev/null || true
+
         for proc in xfce4-session xfwm4 xfce4-panel xfdesktop xfsettingsd Thunar xfce4-notifyd xfce4-power-man \
                     mate-session marco mate-panel caja mate-settings-daemon \
                     cinnamon cinnamon-session muffin nemo \
@@ -2572,7 +2575,13 @@ export XDG_SESSION_TYPE=x11
 export XDG_CURRENT_DESKTOP=${de === "kde" ? "KDE" : de.toUpperCase()}
 unset SESSION_MANAGER
 unset DBUS_SESSION_BUS_ADDRESS
-exec ${cmd}
+if command -v dbus-run-session >/dev/null 2>&1; then
+  exec dbus-run-session -- ${cmd}
+elif command -v dbus-launch >/dev/null 2>&1; then
+  exec dbus-launch --exit-with-session ${cmd}
+else
+  exec ${cmd}
+fi
 `;
       const writeXsession = `
         cat > ~/.xsession << 'XSESSION_EOF'

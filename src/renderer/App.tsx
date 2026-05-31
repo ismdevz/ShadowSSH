@@ -2535,6 +2535,7 @@ export function App() {
       // Write the full setup script via SFTP (avoids any exec channel multiline/length issues)
       const setupScript = [
         "#!/bin/bash",
+        "sudo chown -R $(whoami):$(id -gn) ~/.vnc ~/.dbus ~/.config ~/.cache ~/.local ~/.Xauthority ~/.xsession ~/.xinitrc ~/.Xclients 2>/dev/null || true",
         "mkdir -p ~/.vnc",
         // Write xstartup (already uploaded separately via SFTP below)
         "chmod +x ~/.vnc/xstartup",
@@ -4321,10 +4322,14 @@ export function App() {
                                 {guiCheckState.vncInstalled ? (guiCheckState.vncRunning ? "● Running" : "Installed") : "Not Installed"}
                               </span>
                             </div>
-                            {guiCheckState.vncInstalled && (
+                             {guiCheckState.vncInstalled && (
                               <button type="button" title="VNC Settings" onClick={() => setShowVncSettings(true)}
+                                disabled={guiCheckState.nxRunning || guiCheckState.nxLoading || guiCheckState.vncLoading}
                                 style={{ display: "inline-flex", alignItems: "center", gap: "4px", padding: "3px 10px", borderRadius: "7px", fontSize: "0.72rem",
-                                  fontWeight: 600, cursor: "pointer", border: "1px solid var(--line)", background: "transparent", color: "var(--muted)" }}>
+                                  fontWeight: 600, border: "1px solid var(--line)", background: "transparent",
+                                  color: (guiCheckState.nxRunning || guiCheckState.nxLoading) ? "var(--muted)" : "var(--muted)",
+                                  opacity: (guiCheckState.nxRunning || guiCheckState.nxLoading) ? 0.5 : 1,
+                                  cursor: (guiCheckState.nxRunning || guiCheckState.nxLoading) ? "not-allowed" : "pointer" }}>
                                 <Cog size={14} /> Settings
                                 <span style={{ fontSize: "0.65rem", background: "var(--bg)", borderRadius: "4px", padding: "1px 5px", color: "var(--accent)" }}>
                                   {vncSettings.resolution} · {vncSettings.frameRate}fps
@@ -4341,10 +4346,13 @@ export function App() {
                                   <span style={{ fontSize: "0.72rem", color: "var(--muted)", marginRight: "2px" }}>Viewer:</span>
                                   {(["remmina", "tigervnc"] as const).map(v => (
                                     <button key={v} type="button" onClick={() => setVncViewer(v)}
-                                      style={{ padding: "3px 10px", borderRadius: "6px", fontSize: "0.72rem", fontWeight: 600, cursor: "pointer",
+                                      disabled={guiCheckState.nxRunning || guiCheckState.nxLoading || guiCheckState.vncLoading}
+                                      style={{ padding: "3px 10px", borderRadius: "6px", fontSize: "0.72rem", fontWeight: 600,
                                         border: vncViewer === v ? "2px solid var(--accent)" : "1px solid var(--line)",
                                         background: vncViewer === v ? "rgba(7,172,81,0.1)" : "transparent",
-                                        color: vncViewer === v ? "var(--accent)" : "var(--text)" }}>
+                                        color: vncViewer === v ? "var(--accent)" : "var(--text)",
+                                        opacity: (guiCheckState.nxRunning || guiCheckState.nxLoading) ? 0.5 : 1,
+                                        cursor: (guiCheckState.nxRunning || guiCheckState.nxLoading) ? "not-allowed" : "pointer" }}>
                                       {v === "remmina" ? "Remmina" : "TigerVNC"}
                                     </button>
                                   ))}
@@ -4354,25 +4362,29 @@ export function App() {
                                   {guiCheckState.vncRunning ? (
                                     <button type="button" className="vs-btn"
                                       style={{ display: "inline-flex", alignItems: "center", gap: "5px", background: "#ff4d4f", color: "#fff", fontWeight: 600, padding: "7px 14px", fontSize: "0.8rem" }}
-                                      disabled={guiCheckState.vncLoading} onClick={() => void onStopVncServer()}>
+                                      disabled={guiCheckState.vncLoading || guiCheckState.nxRunning || guiCheckState.nxLoading} onClick={() => void onStopVncServer()}>
                                       <Square size={14} fill="currentColor" />
                                       {guiCheckState.vncLoading ? "Stopping..." : "Stop VNC"}
                                     </button>
                                   ) : (
                                     <button type="button" className="vs-btn"
-                                      style={{ display: "inline-flex", alignItems: "center", gap: "5px", background: "var(--accent)", color: "#000", fontWeight: 600, padding: "7px 14px", fontSize: "0.8rem" }}
-                                      disabled={guiCheckState.vncLoading} onClick={() => void onStartVncServer(activeSessionHost?.guiPort ?? 5901)}>
+                                      style={{ display: "inline-flex", alignItems: "center", gap: "5px",
+                                        background: (guiCheckState.nxRunning || guiCheckState.nxLoading) ? "#4b5563" : "var(--accent)",
+                                        color: (guiCheckState.nxRunning || guiCheckState.nxLoading) ? "#fff" : "#000",
+                                        fontWeight: 600, padding: "7px 14px", fontSize: "0.8rem",
+                                        cursor: (guiCheckState.nxRunning || guiCheckState.nxLoading) ? "not-allowed" : "pointer" }}
+                                      disabled={guiCheckState.vncLoading || guiCheckState.nxRunning || guiCheckState.nxLoading} onClick={() => void onStartVncServer(activeSessionHost?.guiPort ?? 5901)}>
                                       <Play size={14} fill="currentColor" />
                                       {guiCheckState.vncLoading ? "Starting..." : "Start VNC"}
                                     </button>
                                   )}
                                   <button type="button" className="vs-btn"
                                     style={{ display: "inline-flex", alignItems: "center", gap: "5px",
-                                      background: guiCheckState.vncRunning && !vncLaunching ? "#22c55e" : "#4b5563", color: "#fff",
+                                      background: guiCheckState.vncRunning && !vncLaunching && !guiCheckState.nxRunning && !guiCheckState.nxLoading ? "#22c55e" : "#4b5563", color: "#fff",
                                       fontWeight: 600, padding: "7px 14px", fontSize: "0.8rem", border: "none", borderRadius: "6px",
-                                      cursor: guiCheckState.vncRunning && !vncLaunching ? "pointer" : "not-allowed",
-                                      opacity: guiCheckState.vncRunning && !vncLaunching ? 1 : 0.5 }}
-                                    disabled={!guiCheckState.vncRunning || vncLaunching}
+                                      cursor: guiCheckState.vncRunning && !vncLaunching && !guiCheckState.nxRunning && !guiCheckState.nxLoading ? "pointer" : "not-allowed",
+                                      opacity: guiCheckState.vncRunning && !vncLaunching && !guiCheckState.nxRunning && !guiCheckState.nxLoading ? 1 : 0.5 }}
+                                    disabled={!guiCheckState.vncRunning || vncLaunching || guiCheckState.nxRunning || guiCheckState.nxLoading}
                                     title={!guiCheckState.vncRunning ? "Start VNC server first" : "Launch local VNC client"}
                                     onClick={() => void onLaunchVncViewer(activeSessionHost?.guiPort ?? 5901)}>
                                     <Monitor size={14} />
@@ -4382,7 +4394,12 @@ export function App() {
                               </>
                             ) : (
                               <button type="button" className="vs-btn"
-                                style={{ background: "var(--accent)", color: "#000", fontWeight: 600, padding: "7px 14px", fontSize: "0.8rem", alignSelf: "flex-start" }}
+                                disabled={guiCheckState.nxRunning || guiCheckState.nxLoading}
+                                style={{
+                                  background: (guiCheckState.nxRunning || guiCheckState.nxLoading) ? "#4b5563" : "var(--accent)",
+                                  color: (guiCheckState.nxRunning || guiCheckState.nxLoading) ? "#fff" : "#000",
+                                  fontWeight: 600, padding: "7px 14px", fontSize: "0.8rem", alignSelf: "flex-start",
+                                  cursor: (guiCheckState.nxRunning || guiCheckState.nxLoading) ? "not-allowed" : "pointer" }}
                                 onClick={() => void installVpsGui(activeSession.sessionId, guiCheckState.deType as any || "xfce")}>
                                 Install VNC Server
                               </button>
@@ -4409,25 +4426,29 @@ export function App() {
                                 {guiCheckState.nxRunning ? (
                                   <button type="button" className="vs-btn"
                                     style={{ display: "inline-flex", alignItems: "center", gap: "5px", background: "#ff4d4f", color: "#fff", fontWeight: 600, padding: "7px 14px", fontSize: "0.8rem" }}
-                                    disabled={guiCheckState.nxLoading} onClick={() => void onStopNxServer()}>
+                                    disabled={guiCheckState.nxLoading || guiCheckState.vncRunning || guiCheckState.vncLoading} onClick={() => void onStopNxServer()}>
                                     <Square size={14} fill="currentColor" />
                                     {guiCheckState.nxLoading ? "Stopping..." : "Stop NoMachine"}
                                   </button>
                                 ) : (
                                   <button type="button" className="vs-btn"
-                                    style={{ display: "inline-flex", alignItems: "center", gap: "5px", background: "#5c7cfa", color: "#fff", fontWeight: 600, padding: "7px 14px", fontSize: "0.8rem" }}
-                                    disabled={guiCheckState.nxLoading} onClick={() => void onStartNxServer()}>
+                                    style={{ display: "inline-flex", alignItems: "center", gap: "5px",
+                                      background: (guiCheckState.vncRunning || guiCheckState.vncLoading) ? "#4b5563" : "#5c7cfa",
+                                      color: "#fff",
+                                      fontWeight: 600, padding: "7px 14px", fontSize: "0.8rem",
+                                      cursor: (guiCheckState.vncRunning || guiCheckState.vncLoading) ? "not-allowed" : "pointer" }}
+                                    disabled={guiCheckState.nxLoading || guiCheckState.vncRunning || guiCheckState.vncLoading} onClick={() => void onStartNxServer()}>
                                     <Play size={14} fill="currentColor" />
                                     {guiCheckState.nxLoading ? "Configuring & Starting..." : "Start NoMachine"}
                                   </button>
                                 )}
                                 <button type="button" className="vs-btn"
                                   style={{ display: "inline-flex", alignItems: "center", gap: "5px",
-                                    background: guiCheckState.nxRunning && !nxLaunching ? "#22c55e" : "#4b5563", color: "#fff",
+                                    background: guiCheckState.nxRunning && !nxLaunching && !guiCheckState.vncRunning && !guiCheckState.vncLoading ? "#22c55e" : "#4b5563", color: "#fff",
                                     fontWeight: 600, padding: "7px 14px", fontSize: "0.8rem",
-                                    cursor: guiCheckState.nxRunning && !nxLaunching ? "pointer" : "not-allowed",
-                                    opacity: guiCheckState.nxRunning && !nxLaunching ? 1 : 0.5 }}
-                                  disabled={!guiCheckState.nxRunning || nxLaunching}
+                                    cursor: guiCheckState.nxRunning && !nxLaunching && !guiCheckState.vncRunning && !guiCheckState.vncLoading ? "pointer" : "not-allowed",
+                                    opacity: guiCheckState.nxRunning && !nxLaunching && !guiCheckState.vncRunning && !guiCheckState.vncLoading ? 1 : 0.5 }}
+                                  disabled={!guiCheckState.nxRunning || nxLaunching || guiCheckState.vncRunning || guiCheckState.vncLoading}
                                   title={!guiCheckState.nxRunning ? "Start NoMachine server first" : "Launch local NoMachine client"}
                                   onClick={() => void onLaunchNoMachine(4000)}>
                                   <Monitor size={14} />
@@ -4436,7 +4457,12 @@ export function App() {
                               </div>
                             ) : (
                               <button type="button" className="vs-btn"
-                                style={{ background: "#5c7cfa", color: "#fff", fontWeight: 600, padding: "7px 14px", fontSize: "0.8rem", alignSelf: "flex-start" }}
+                                disabled={guiCheckState.vncRunning || guiCheckState.vncLoading}
+                                style={{
+                                  background: (guiCheckState.vncRunning || guiCheckState.vncLoading) ? "#4b5563" : "#5c7cfa",
+                                  color: "#fff",
+                                  fontWeight: 600, padding: "7px 14px", fontSize: "0.8rem", alignSelf: "flex-start",
+                                  cursor: (guiCheckState.vncRunning || guiCheckState.vncLoading) ? "not-allowed" : "pointer" }}
                                 onClick={() => void installVpsNomachine(activeSession.sessionId, guiCheckState.deType as any || "xfce")}>
                                 Install NoMachine
                               </button>
