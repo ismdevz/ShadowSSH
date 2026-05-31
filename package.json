@@ -1,0 +1,113 @@
+{
+  "name": "shadowssh",
+  "productName": "ShadowSSH",
+  "version": "1.0.2",
+  "description": "Modern desktop SSH client with session management, SFTP tools, key generation",
+  "homepage": "https://github.com/ismdevz/ShadowSSH",
+  "main": "dist-electron/main/main.js",
+  "author": {
+    "name": "ismdevz",
+    "email": "notzero0@outlook.com"
+  },
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -k --success=first \"npm:dev:renderer\" \"npm:dev:electron:watch\" \"npm:dev:electron\"",
+    "dev:renderer": "vite",
+    "dev:electron:watch": "concurrently -k \"tsc -p tsconfig.electron.json --watch --preserveWatchOutput\" \"tsc -p tsconfig.preload.json --watch --preserveWatchOutput\"",
+    "dev:electron": "wait-on tcp:5173 dist-electron/main/main.js dist-electron/preload/preload.js && rm -f node_modules/.bin/ShadowSSH && ln -s electron node_modules/.bin/ShadowSSH && cross-env VITE_DEV_SERVER_URL=http://localhost:5173 ./node_modules/.bin/ShadowSSH --ozone-platform=wayland --enable-features=WaylandWindowDecorations --disable-gpu .",
+    "build": "npm run build:smd && npm run build:renderer && npm run build:electron",
+    "build:smd": "cd smd && npm run build && npm run compile:linux",
+    "build:renderer": "vite build",
+    "build:electron": "tsc -p tsconfig.electron.json && tsc -p tsconfig.preload.json",
+    "typecheck": "tsc -p tsconfig.electron.json --noEmit && tsc -p tsconfig.preload.json --noEmit && tsc -p tsconfig.renderer.json --noEmit",
+    "start": "npm run build && electron --ozone-platform=wayland --enable-features=WaylandWindowDecorations --no-sandbox .",
+    "dist": "npm run build && electron-builder --linux"
+  },
+  "build": {
+    "appId": "com.ismdevz.shadowssh",
+    "productName": "ShadowSSH",
+    "directories": {
+      "output": "dist-packages",
+      "buildResources": "public"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*",
+      "public/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "smd/dist",
+        "to": "smd",
+        "filter": [
+          "smd-linux",
+          "smd.js",
+          "smd.cjs"
+        ]
+      }
+    ],
+    "npmRebuild": false,
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb",
+        "rpm"
+      ],
+      "icon": "public/icon.png",
+      "executableName": "shadowssh",
+      "executableArgs": [
+        "--ozone-platform=wayland",
+        "--enable-features=WaylandWindowDecorations"
+      ],
+      "category": "Network",
+      "maintainer": "ismdevz <ismdevz@users.noreply.github.com>",
+      "description": "Modern desktop SSH client with session management, SFTP tools, key generation, and built-in auto updates.",
+      "desktop": {
+        "entry": {
+          "Name": "ShadowSSH",
+          "StartupWMClass": "shadowssh",
+          "X-GNOME-WMClass": "shadowssh"
+        }
+      }
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "ismdevz",
+      "repo": "ShadowSSH"
+    }
+  },
+  "optionalDependencies": {
+    "nan": "^2.27.0"
+  },
+  "dependencies": {
+    "@xterm/addon-fit": "^0.11.0",
+    "@xterm/xterm": "^6.0.0",
+    "electron-store": "^11.0.2",
+    "electron-updater": "^6.8.3",
+    "lucide-react": "^1.17.0",
+    "ssh2": "^1.17.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.0",
+    "@types/node": "^25.9.1",
+    "@types/react": "^19.2.15",
+    "@types/react-dom": "^19.2.3",
+    "@types/ssh2": "^1.15.5",
+    "@vitejs/plugin-react": "^6.0.2",
+    "autoprefixer": "^10.5.0",
+    "concurrently": "^10.0.0",
+    "cross-env": "^10.1.0",
+    "electron": "^42.3.0",
+    "electron-builder": "^26.8.1",
+    "postcss": "^8.5.15",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "tailwindcss": "^4.3.0",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.14",
+    "wait-on": "^9.0.10"
+  }
+}
