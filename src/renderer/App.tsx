@@ -685,6 +685,11 @@ export function App() {
   const settingsRef = useRef<AppSettings>(defaultSettings);
   const reconnectTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const sessionsRef = useRef<SessionMeta[]>([]);
+  const guiCheckStateRef = useRef(guiCheckState);
+
+  useEffect(() => {
+    guiCheckStateRef.current = guiCheckState;
+  }, [guiCheckState]);
 
   useEffect(() => {
     settingsRef.current = settings;
@@ -883,6 +888,7 @@ export function App() {
     setSftpPath(path);
     setSftpPathInput(path);
     setSftpStatus("Loading...");
+    setSftpLoading(true);
 
     try {
       const result = await window.api.sftpList(sessionId, path);
@@ -895,6 +901,8 @@ export function App() {
     } catch (error: unknown) {
       setSftpStatus(`SFTP error: ${String(error instanceof Error ? error.message : error)}`);
       setSftpEntries([]);
+    } finally {
+      setSftpLoading(false);
     }
   };
 
@@ -955,7 +963,10 @@ export function App() {
       }
       if (event.ctrlKey && event.shiftKey && event.key === "V") {
         event.preventDefault();
-        void navigator.clipboard.readText().then((text: string) => { terminal.paste(text); });
+        void navigator.clipboard.readText().then((text: string) => {
+          terminal.paste(text);
+          terminal.focus();
+        });
         return false;
       }
       return true;
@@ -982,7 +993,7 @@ export function App() {
       pasteBtn.style.cssText = copyBtn.style.cssText; pasteBtn.style.opacity = "1"; pasteBtn.disabled = false;
       pasteBtn.onmouseenter = () => { pasteBtn.style.background = "var(--hover,#333)"; };
       pasteBtn.onmouseleave = () => { pasteBtn.style.background = "none"; };
-      pasteBtn.onclick = () => { navigator.clipboard.readText().then((t: string) => terminal.paste(t)); document.body.removeChild(menu); };
+       pasteBtn.onclick = () => { navigator.clipboard.readText().then((t: string) => { terminal.paste(t); terminal.focus(); }); document.body.removeChild(menu); };
       menu.appendChild(copyBtn); menu.appendChild(pasteBtn); 
       
       const sep = document.createElement("div");
@@ -2046,6 +2057,15 @@ export function App() {
     const connected = sessions.find((s) => s.hostId === hostId && s.status === "connected");
     if (!connected) return;
 
+    if (
+      guiCheckStateRef.current.status === "installing" ||
+      guiCheckStateRef.current.status === "checking"
+    ) {
+      if (guiCheckStateRef.current.sessionId === connected.sessionId) {
+        return;
+      }
+    }
+
     setFetchingStatsHostIds((prev) => {
       const next = new Set(prev);
       next.add(hostId);
@@ -2141,7 +2161,7 @@ export function App() {
     let rafId = 0;
 
     const tick = (now: number): void => {
-      if (now - lastStatsPollAtRef.current >= 1000) {
+      if (now - lastStatsPollAtRef.current >= 8000) {
         lastStatsPollAtRef.current = now;
         for (const hostId of activeHosts) {
           void fetchHostStats(hostId);
@@ -3855,7 +3875,7 @@ export function App() {
             <div className="top-right-tools">
               {(() => {
                 const latencyMs = activeLatency?.ok ? (activeLatency.latencyMs ?? null) : null;
-                const latencyTone = latencyMs === null ? "red" : latencyMs <= 100 ? "green" : latencyMs <= 300 ? "yellow" : "red";
+                const latencyTone = latencyMs === null ? "red" : latencyMs <= 120 ? "green" : latencyMs <= 300 ? "yellow" : "red";
                 const latencyText = isFetchingActiveLatency ? "..." : latencyMs === null ? "ERR" : `${latencyMs}ms`;
 
                 return (

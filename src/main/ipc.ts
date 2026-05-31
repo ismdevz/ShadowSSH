@@ -790,9 +790,7 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
       throw new Error("Session not found");
     }
 
-    console.log(`[SSH-EXEC-DEBUG] Command: ${parsed.data.command}`);
     const output = await session.exec(parsed.data.command);
-    console.log(`[SSH-EXEC-DEBUG] Output:\n${output}\n====================`);
     return { output };
   });
 
@@ -2400,7 +2398,7 @@ ${authOption}
     let installRes = "";
     let success = false;
     try {
-      installRes = await session.exec(`${smdCmd} install ${parsed.data.target}`);
+      installRes = await session.exec(`DEBIAN_FRONTEND=noninteractive sudo -n ${smdCmd} install ${parsed.data.target} 2>&1 || sudo ${smdCmd} install ${parsed.data.target}`);
       success = !installRes.includes("Failed to install") && !installRes.toLowerCase().includes("error");
       
       if (parsed.data.target === "tigervnc") {
@@ -2433,7 +2431,7 @@ ${authOption}
     let uninstallRes = "";
     let success = false;
     try {
-      uninstallRes = await session.exec(`${smdCmd} uninstall ${parsed.data.target}`);
+      uninstallRes = await session.exec(`DEBIAN_FRONTEND=noninteractive sudo -n ${smdCmd} uninstall ${parsed.data.target} 2>&1 || sudo ${smdCmd} uninstall ${parsed.data.target}`);
       success = !uninstallRes.includes("Failed to uninstall") && !uninstallRes.toLowerCase().includes("error");
     } catch (err: any) {
       uninstallRes = err.message || String(err);

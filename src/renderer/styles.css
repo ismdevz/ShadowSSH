@@ -541,9 +541,9 @@ html, body {
 }
 
 .latency-indicator.green {
-  color: #80ff8c;
-  border-color: color-mix(in oklab, #80ff8c 45%, var(--line));
-  background: color-mix(in oklab, #80ff8c 14%, transparent);
+  color: #2ecc71;
+  border-color: color-mix(in oklab, #2ecc71 45%, var(--line));
+  background: color-mix(in oklab, #2ecc71 14%, transparent);
 }
 
 .latency-indicator.yellow {
