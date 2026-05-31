@@ -2466,6 +2466,15 @@ export function App() {
       return;
     }
 
+    if (guiCheckState.nxRunning) {
+      setSftpStatus("Stopping active NoMachine session before starting VNC...");
+      try {
+        await onStopNxServer();
+      } catch (err) {
+        console.warn("Failed to stop NoMachine server:", err);
+      }
+    }
+
     setSftpStatus("Starting VNC server on VPS...");
     setGuiCheckState(prev => ({ ...prev, vncLoading: true }));
     try {
@@ -2634,6 +2643,15 @@ export function App() {
   const onStartNxServer = async (): Promise<void> => {
     if (!activeSessionId) {
       return;
+    }
+
+    if (guiCheckState.vncRunning) {
+      setSftpStatus("Stopping active VNC session before starting NoMachine...");
+      try {
+        await onStopVncServer();
+      } catch (err) {
+        console.warn("Failed to stop VNC server:", err);
+      }
     }
 
     setSftpStatus("Starting NoMachine server on VPS...");

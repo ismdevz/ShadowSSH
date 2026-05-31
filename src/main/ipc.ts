@@ -325,7 +325,7 @@ const installKeySchema = z.object({
   password: z.string().optional(),
   publicKeyPath: z.string().min(1).max(4096)
 });
-  
+
 // Additional schemas can be added here
 // Ensure to validate the schemas before use
 
@@ -470,7 +470,7 @@ async function cleanStaleSshConfigs(hosts: HostRecord[]): Promise<void> {
     // ...
     // # shadowssh-end-shadowssh-ws-<hash>
     const regex = /# shadowssh-begin-shadowssh-ws-([a-f0-9]{8})[\s\S]*?# shadowssh-end-shadowssh-ws-\1\n?/g;
-    
+
     let modified = false;
     const newContent = configContent.replace(regex, (block: string, hash: string) => {
       if (!hash || !activeHashes.has(hash)) {
@@ -493,11 +493,11 @@ async function cleanStaleSshConfigs(hosts: HostRecord[]): Promise<void> {
         if (matchHash) {
           const hash = matchHash[1];
           if (hash && !activeHashes.has(hash)) {
-            await unlink(join(socketDir, file)).catch(() => {});
+            await unlink(join(socketDir, file)).catch(() => { });
           }
         }
       }
-    } catch {}
+    } catch { }
   } catch (e) {
     console.error("Failed to clean stale SSH configurations:", e);
   }
@@ -918,8 +918,8 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
               }
               resolve({ ok: true });
             });
-            stream.on("data", () => {});
-            stream.stderr.on("data", () => {});
+            stream.on("data", () => { });
+            stream.stderr.on("data", () => { });
           });
         })
         .on("error", (err) => {
@@ -953,7 +953,7 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
     try {
       await unlink(parsed.data.path);
       // also remove .pub if it exists
-      try { await unlink(`${parsed.data.path}.pub`); } catch {}
+      try { await unlink(`${parsed.data.path}.pub`); } catch { }
     } catch (err: unknown) {
       const code = (err as NodeJS.ErrnoException).code;
       if (code !== "ENOENT") throw err; // ignore "file not found"
@@ -1574,13 +1574,13 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
         const { tmpdir } = await import("node:os");
         const { writeFileSync } = await import("node:fs");
         localPasswdPath = join(tmpdir(), `vnc_passwd_${sessionId}`);
-        
+
         // The VNC password is force-set to 'shadow' on the VPS during startup.
         // We write the pre-encrypted 8-byte DES value directly to avoid unreliable remote extraction.
         const buffer = Buffer.from("Bex4lXJvDCY=", "base64");
         writeFileSync(localPasswdPath, buffer);
         console.log(`[VNC-DEBUG] Successfully wrote local 8-byte VNC passwd file (shadow) to: ${localPasswdPath}`);
-        
+
       } catch (err: any) {
         console.warn("[VNC-DEBUG] VNC local auth prep failed:", err.message);
         localPasswdPath = "";
@@ -1599,13 +1599,13 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
           const { unlink } = await import("node:fs/promises");
           try {
             await unlink(tempNxsPath);
-          } catch {}
+          } catch { }
         }
         if (localPasswdPath) {
           const { unlink } = await import("node:fs/promises");
           try {
             await unlink(localPasswdPath);
-          } catch {}
+          } catch { }
         }
       };
 
@@ -1636,7 +1636,7 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
 
           try {
             mkdirSync(nxsDir, { recursive: true });
-          } catch {}
+          } catch { }
 
           const nxsPath = join(nxsDir, `connection-${hostId}.nxs`);
           console.log(`[NOMACHINE-DEBUG] NXS path: ${nxsPath}, localPort: ${localPort}`);
@@ -1725,7 +1725,7 @@ ${authOption}
           writeFileSync(nxsPath, xml, "utf8");
 
           const isWindows = process.platform === "win32";
-          const nxplayerPaths = isWindows 
+          const nxplayerPaths = isWindows
             ? ["nxplayer.exe", "C:\\Program Files (x86)\\NoMachine\\bin\\nxplayer.exe", "C:\\Program Files\\NoMachine\\bin\\nxplayer.exe"]
             : ["nxplayer", "/usr/NX/bin/nxplayer"];
           let pathIdx = 0;
@@ -1737,8 +1737,8 @@ ${authOption}
               return;
             }
             const cmd = nxplayerPaths[pathIdx]!;
-            childProcess = spawn(cmd, ["--session", nxsPath], { 
-              stdio: "ignore", 
+            childProcess = spawn(cmd, ["--session", nxsPath], {
+              stdio: "ignore",
               detached: true,
               shell: isWindows // Windows needs shell to find commands in PATH sometimes
             });
@@ -1766,7 +1766,7 @@ ${authOption}
         // Build viewer list based on user preference
         const vncPassword = "shadow";
         const remminaEntry = { cmd: "remmina", args: ["-c", `vnc://:${vncPassword}@127.0.0.1:${localPort}`] };
-        
+
         // If we successfully downloaded the VPS's encrypted passwd file, pass it directly.
         // Otherwise, fall back to spawning vncviewer normally.
         // Quality flags: -PreferredEncoding Tight (best for LAN/WAN), -QualityLevel 9 (max),
@@ -2095,7 +2095,7 @@ ${authOption}
 
     const smdCmd = await ensureSmd(session);
     const output = await session.exec(`${smdCmd} detect --json`);
-    
+
     try {
       const data = JSON.parse(output.trim());
       const deList = data.desktop ?? [];
@@ -2122,7 +2122,7 @@ ${authOption}
         }
 
         const binaries = sections["BINARIES"] ?? "";
-        
+
         const getDeBinary = (de: string): string => {
           if (de === "xfce") {
             if (binaries.includes("startxfce4")) return "/usr/bin/startxfce4";
@@ -2168,10 +2168,10 @@ ${authOption}
         };
 
         const matchedDefault = findDeInText(sections["PROCESSES"] ?? "") ||
-                               findDeInText(sections["NXCONFIG"] ?? "") ||
-                               findDeInText(sections["XFILES"] ?? "") ||
-                               findDeInText(sections["ACCOUNTS"] ?? "") ||
-                               findDeInText(sections["LINK"] ?? "");
+          findDeInText(sections["NXCONFIG"] ?? "") ||
+          findDeInText(sections["XFILES"] ?? "") ||
+          findDeInText(sections["ACCOUNTS"] ?? "") ||
+          findDeInText(sections["LINK"] ?? "");
 
         console.log("[SMD-DETECTION-DEBUG] Matched default DE:", matchedDefault);
 
@@ -2185,11 +2185,11 @@ ${authOption}
         // Check if we need to auto-correct NoMachine's config
         // Only auto-correct when NXCONFIG points to a stale DE that's NOT running
         let needsCorrection = false;
-        
+
         const nxConfigLine = (sections["NXCONFIG"] ?? "").trim();
         const matchQuote = nxConfigLine.match(/DefaultDesktopCommand\s+"([^"]+)"/) || nxConfigLine.match(/DefaultDesktopCommand\s+(.+)/);
         const nxConfigCmd = (matchQuote && matchQuote[1]) ? matchQuote[1].trim() : "";
-        
+
         const knownBinaries = [
           "/usr/bin/startxfce4",
           "/usr/bin/xfce4-session",
@@ -2201,14 +2201,14 @@ ${authOption}
           "/usr/bin/startplasma-x11",
           "/usr/bin/startkde"
         ];
-        
+
         const configuredBinary = knownBinaries.find(b => nxConfigCmd.includes(b));
-        
+
         console.log("[SMD-DETECTION-DEBUG] deList:", deList);
         console.log("[SMD-DETECTION-DEBUG] nxConfigCmd:", nxConfigCmd);
         console.log("[SMD-DETECTION-DEBUG] configuredBinary:", configuredBinary);
         console.log("[SMD-DETECTION-DEBUG] binaries:", binaries);
-        
+
         if (deList.length > 0) {
           if (!nxConfigCmd) {
             needsCorrection = true;
@@ -2231,7 +2231,7 @@ ${authOption}
         if (needsCorrection) {
           // Determine the correct DE to set
           let targetDe = "";
-          
+
           // Priority: 1) Running process 2) First deList entry that has a valid binary 3) Last resort
           if (runningDe && deList.includes(runningDe)) {
             targetDe = runningDe;
@@ -2251,11 +2251,11 @@ ${authOption}
               const deCheck = await session.exec(deCheckCmd);
               const detectedFromFiles = deCheck.trim().toLowerCase();
               if (detectedFromFiles === "mate" || detectedFromFiles === "xfce" ||
-                  detectedFromFiles === "cinnamon" || detectedFromFiles === "gnome" ||
-                  detectedFromFiles === "kde" || detectedFromFiles === "plasma") {
+                detectedFromFiles === "cinnamon" || detectedFromFiles === "gnome" ||
+                detectedFromFiles === "kde" || detectedFromFiles === "plasma") {
                 targetDe = detectedFromFiles === "plasma" ? "kde" : detectedFromFiles;
               }
-            } catch {}
+            } catch { }
           }
 
           console.log("[SMD-DETECTION-DEBUG] targetDe:", targetDe);
@@ -2302,7 +2302,7 @@ ${authOption}
                 sudo rm -rf /usr/NX/var/data/db/running/* 2>/dev/null || true
                 sudo systemctl reset-failed nxserver.service 2>/dev/null || true
               `;
-              
+
               const altTarget = (targetDe === "xfce" && binaries.includes("xfce4-session")) ? "/usr/bin/xfce4-session" : cmd;
 
               const setAlternatives = altTarget ? `
@@ -2382,11 +2382,11 @@ ${authOption}
       } catch (err) {
         console.error("[SMD-DETECTION-DEBUG] Error running detection:", err);
       }
-      
+
       const remoteList = data.remote ?? [];
       const vncInstalled = remoteList.includes("tigervnc");
       const nxInstalled = remoteList.includes("nomachine");
-      
+
       const ramStr = data.hardware?.ram?.total ?? "0";
       const totalGB = parseFloat(ramStr) || 0;
       const ramMB = Math.round(totalGB * 1024);
@@ -2418,13 +2418,13 @@ ${authOption}
     }
 
     const smdCmd = await ensureSmd(session);
-    
+
     let installRes = "";
     let success = false;
     try {
       installRes = await session.exec(`DEBIAN_FRONTEND=noninteractive sudo -n ${smdCmd} install ${parsed.data.target} 2>&1 || sudo ${smdCmd} install ${parsed.data.target}`);
       success = !installRes.includes("Failed to install") && !installRes.toLowerCase().includes("error");
-      
+
       if (parsed.data.target === "tigervnc") {
         await session.exec('mkdir -p ~/.vnc && echo "shadow" | vncpasswd -f > ~/.vnc/passwd && chmod 600 ~/.vnc/passwd || true');
       }
@@ -2451,7 +2451,7 @@ ${authOption}
     }
 
     const smdCmd = await ensureSmd(session);
-    
+
     let uninstallRes = "";
     let success = false;
     try {
@@ -2484,7 +2484,7 @@ ${authOption}
     }
 
     const de = parsed.data.de;
-    
+
     // Probe for existing binaries
     const probeCmd = "for b in /usr/bin/startxfce4 /usr/bin/xfce4-session /usr/bin/mate-session /usr/bin/gnome-session /usr/bin/gnome-shell /usr/bin/cinnamon-session /usr/bin/cinnamon-session-cinnamon /usr/bin/startplasma-x11 /usr/bin/startkde; do [ -f \"$b\" ] && echo \"$b\"; done";
     const probeOut = await session.exec(probeCmd);
@@ -2637,39 +2637,8 @@ AS_EOF"
       // starts fresh with the new DE instead of resuming the old cached session
       const killNxSessions = `
         echo "[ShadowSSH] Terminating all existing NoMachine sessions..."
-        
-        # Ensure dummy Xorg driver configuration is in place so display-manager can run headlessly
-        if [ ! -f /etc/X11/xorg.conf.d/99-headless.conf ]; then
-          sudo mkdir -p /etc/X11/xorg.conf.d 2>/dev/null || true
-          sudo bash -c "cat > /etc/X11/xorg.conf.d/99-headless.conf << 'XORG_EOF'
-Section \"Device\"
-  Identifier  \"VirtualDevice\"
-  Driver      \"dummy\"
-  Option      \"SWCursor\"  \"true\"
-EndSection
-
-Section \"Monitor\"
-  Identifier  \"VirtualMonitor\"
-  Option      \"DPMS\" \"false\"
-EndSection
-
-Section \"Screen\"
-  Identifier  \"VirtualScreen\"
-  Device      \"VirtualDevice\"
-  Monitor     \"VirtualMonitor\"
-  DefaultDepth 24
-  SubSection  \"Display\"
-    Depth    24
-    Modes    \"1920x1080\" \"1280x720\" \"1024x768\"
-  EndSubSection
-EndSection
-XORG_EOF"
-        fi
-
-        # Make sure display-manager is started/running with dummy configuration
-        sudo systemctl start display-manager 2>/dev/null || sudo systemctl start lightdm 2>/dev/null || sudo systemctl start gdm3 2>/dev/null || sudo systemctl start gdm 2>/dev/null || sudo systemctl start sddm 2>/dev/null || true
-        # Also restart it to apply dummy configuration if it was already running in a broken state
-        sudo systemctl restart display-manager 2>/dev/null || sudo systemctl restart lightdm 2>/dev/null || sudo systemctl restart gdm3 2>/dev/null || sudo systemctl restart gdm 2>/dev/null || sudo systemctl restart sddm 2>/dev/null || true
+        # Stop any active display managers that block virtual display fallback on headless VPS
+        sudo systemctl stop display-manager 2>/dev/null || sudo systemctl stop lightdm 2>/dev/null || sudo systemctl stop gdm3 2>/dev/null || sudo systemctl stop gdm 2>/dev/null || sudo systemctl stop sddm 2>/dev/null || true
 
         # Use nxserver terminate first (graceful)
         if [ -x /etc/NX/nxserver ]; then
