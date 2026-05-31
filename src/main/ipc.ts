@@ -2028,7 +2028,19 @@ ${authOption}
       throw new Error("Could not find local smd build directory");
     }
 
-    await session.exec("mkdir -p ~/.shadowssh");
+    let remoteHome = "";
+    try {
+      const homeDirCheck = await session.exec("echo $HOME");
+      remoteHome = homeDirCheck.trim();
+    } catch {
+      // Fallback
+    }
+    if (!remoteHome) {
+      remoteHome = "~";
+    }
+
+    await session.exec(`mkdir -p "${remoteHome}/.shadowssh" && sudo chown -R $(whoami) "${remoteHome}/.shadowssh" 2>/dev/null || true`);
+    await session.exec(`sudo rm -f "${remoteHome}/.shadowssh/smd" "${remoteHome}/.shadowssh/smd.js" 2>/dev/null || true`);
 
     let remoteHasNode = false;
     try {
@@ -2045,16 +2057,16 @@ ${authOption}
       if (!existsSync(localSmdJs)) {
         throw new Error(`smd.js not found at ${localSmdJs}`);
       }
-      await session.uploadFileToPath(localSmdJs, ".shadowssh/smd.js");
-      return "node ~/.shadowssh/smd.js";
+      await session.uploadFileToPath(localSmdJs, `${remoteHome}/.shadowssh/smd.js`);
+      return `node "${remoteHome}/.shadowssh/smd.js"`;
     } else {
       const localSmdLinux = join(localDistDir, "smd-linux");
       if (!existsSync(localSmdLinux)) {
         throw new Error(`smd-linux not found at ${localSmdLinux}`);
       }
-      await session.uploadFileToPath(localSmdLinux, ".shadowssh/smd");
-      await session.exec("chmod +x ~/.shadowssh/smd");
-      return "~/.shadowssh/smd";
+      await session.uploadFileToPath(localSmdLinux, `${remoteHome}/.shadowssh/smd`);
+      await session.exec(`chmod +x "${remoteHome}/.shadowssh/smd"`);
+      return `"${remoteHome}/.shadowssh/smd"`;
     }
   }
 
