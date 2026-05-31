@@ -2637,6 +2637,9 @@ AS_EOF"
       // starts fresh with the new DE instead of resuming the old cached session
       const killNxSessions = `
         echo "[ShadowSSH] Terminating all existing NoMachine sessions..."
+        # Stop any active display managers that block virtual display fallback on headless VPS
+        sudo systemctl stop display-manager 2>/dev/null || sudo systemctl stop lightdm 2>/dev/null || sudo systemctl stop gdm3 2>/dev/null || sudo systemctl stop gdm 2>/dev/null || sudo systemctl stop sddm 2>/dev/null || true
+
         # Use nxserver terminate first (graceful)
         if [ -x /etc/NX/nxserver ]; then
           sudo /etc/NX/nxserver --terminate all 2>/dev/null || true
@@ -2659,7 +2662,7 @@ AS_EOF"
         
         # Finally, restart NoMachine with the new configuration
         if [ -x /usr/NX/bin/nxserver.bin ] || [ -x /etc/NX/nxserver ]; then
-          sudo systemctl start nxserver.service 2>/dev/null || sudo /etc/NX/nxserver --startup 2>/dev/null || true
+          sudo systemctl start nxserver.service 2>/dev/null || sudo /etc/NX/nxserver --startup 2>/dev/null || sudo /etc/NX/nxserver --restart 2>/dev/null || true
         fi
       `;
 
